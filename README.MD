@@ -15,5 +15,5 @@ We Used:
 * pandas data structures and analysis library, version 0.20.1
 * The python NBA api
 
-###Where do we take this?
+### Where do we take this?
 In the future, I think the basic framework of this project could be used to easily create visualizations for certain media outlets so I think that we could take an aspect of to our final project. Unfortunately efforts to color code the bars based on opponents could not be put together within the time given.
