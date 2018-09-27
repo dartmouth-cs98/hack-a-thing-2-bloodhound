@@ -17,3 +17,6 @@ We Used:
 
 ### Where do we take this?
 In the future, I think the basic framework of this project could be used to easily create visualizations for certain media outlets so I think that we could take an aspect of to our final project. Unfortunately efforts to color code the bars based on opponents could not be put together within the time given.
+
+##### Notes
+The graphing portion of this was inspired by the tutorial [HERE](https://www.fullstackpython.com/blog/responsive-bar-charts-bokeh-flask-python-3.html)
