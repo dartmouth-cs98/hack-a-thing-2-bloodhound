@@ -7,19 +7,19 @@ from bokeh.charts import Bar
 from bokeh.embed import components
 from bokeh.models.sources import ColumnDataSource
 from flask import Flask, render_template
+from nba_api.stats.endpoints import commonplayerinfo, playerfantasyprofile
+from nba_api.stats.static import players
+import pandas
 
 def create_hover_tool():
     # we'll code this function in a moment
     """Generates the HTML for the Bokeh's hover data tool on our graph."""
     hover_html = """
       <div>
-        <span class="hover-tooltip">$x</span>
+        <span class="hover-tooltip">Scored: @Stat</span>
       </div>
       <div>
-        <span class="hover-tooltip">@bugs bugs</span>
-      </div>
-      <div>
-        <span class="hover-tooltip">$@costs{0.00}</span>
+        <span class="hover-tooltip">Opponent: @Opponent</span>
       </div>
     """
     return HoverTool(tooltips=hover_html)
@@ -32,8 +32,8 @@ def create_bar_chart(data, title, x_name, y_name, hover_tool=None,
        name of x axis, y axis and the hover tool HTML.
     """
     source = ColumnDataSource(data)
-    xdr = FactorRange(factors=data[x_name])
-    ydr = Range1d(start=0,end=max(data[y_name])*1.5)
+    xdr = FactorRange(factors=data['Game'])
+    ydr = Range1d(start=0,end=max(data['Stat'])*1.5)
 
     tools = []
     if hover_tool:
@@ -44,7 +44,7 @@ def create_bar_chart(data, title, x_name, y_name, hover_tool=None,
                   min_border=0, toolbar_location="above", tools=tools,
                   responsive=True, outline_line_color="#666666")
 
-    glyph = VBar(x=x_name, top=y_name, bottom=0, width=.8,
+    glyph = VBar(x='Game', top='Stat', bottom=0, width=.8,
                  fill_color="#e12127")
     plot.add_glyph(source, glyph)
 
@@ -57,9 +57,9 @@ def create_bar_chart(data, title, x_name, y_name, hover_tool=None,
     plot.min_border_top = 0
     plot.xgrid.grid_line_color = None
     plot.ygrid.grid_line_color = "#999999"
-    plot.yaxis.axis_label = "Bugs found"
+    plot.yaxis.axis_label = y_name
     plot.ygrid.grid_line_alpha = 0.1
-    plot.xaxis.axis_label = "Days after app deployment"
+    plot.xaxis.axis_label = x_name
     plot.xaxis.major_label_orientation = 1
     return plot
 
@@ -67,23 +67,43 @@ def create_bar_chart(data, title, x_name, y_name, hover_tool=None,
 app = Flask(__name__)
 
 
-@app.route("/<int:bars_count>/")
-def chart(bars_count):
+@app.route("/<playerName>/<seasonYear>/<statCategory>")
+def chart(playerName,seasonYear,statCategory):
+    playerId = players.find_players_by_first_name(playerName)[0]['id']
+    # print(playerId)
+
+
+    player_info = commonplayerinfo.CommonPlayerInfo(player_id= playerId)
+    playerInfo = player_info.common_player_info.get_data_frame()
+    # print (avaliableSeasonDF.at[0, 'SEASON_ID'])
+    # print (playerInfo)
+    # team_id =
+
+
+    seasonInfo = playerfantasyprofile.PlayerFantasyProfile(player_id = playerId, season=seasonYear)
+
+    seasonInfoByGame= seasonInfo.opponent.get_data_frame()
+    # print(seasonInfoByGame)
+    statDF = seasonInfoByGame.loc[:,statCategory]
+    oppDF = seasonInfoByGame.loc[:,'GROUP_VALUE']
+    print(statDF)
+    bars_count = 10
     if bars_count <= 0:
         bars_count = 1
 
-    data = {"days": [], "bugs": [], "costs": []}
-    for i in range(1, bars_count + 1):
-        data['days'].append(i)
-        data['bugs'].append(random.randint(1,100))
-        data['costs'].append(random.uniform(1.00, 1000.00))
+    data = {"Game": [], "Stat": statDF.tolist(), "Opponent": oppDF.tolist()}
+    for i in range(1, len(statDF.tolist()) + 1):
+        data['Game'].append(i)
+
 
     hover = create_hover_tool()
-    plot = create_bar_chart(data, "Bugs found per day", "days",
-                            "bugs", hover)
+    title = playerName + ' ' + seasonYear
+    print(data)
+    plot = create_bar_chart(data, title, "Game",
+                            statCategory, hover)
     script, div = components(plot)
 
-    return render_template("chart.html", bars_count=bars_count,
+    return render_template("chart.html", pn = playerName,sy = seasonYear,sc = statCategory,
                            the_div=div, the_script=script)
 
 if __name__ == "__main__":
