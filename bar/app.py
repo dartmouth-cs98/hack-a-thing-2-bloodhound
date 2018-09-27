@@ -1,4 +1,3 @@
-import random
 from bokeh.models import (HoverTool, FactorRange, Plot, LinearAxis, Grid,
                           Range1d)
 from bokeh.models.glyphs import VBar
@@ -11,8 +10,9 @@ from nba_api.stats.endpoints import commonplayerinfo, playerfantasyprofile
 from nba_api.stats.static import players
 import pandas
 
+
+#tutorial on flask comes from https://www.fullstackpython.com/blog/responsive-bar-charts-bokeh-flask-python-3.html
 def create_hover_tool():
-    # we'll code this function in a moment
     """Generates the HTML for the Bokeh's hover data tool on our graph."""
     hover_html = """
       <div>
