@@ -6,7 +6,7 @@ from bokeh.plotting import figure
 from bokeh.charts import Bar
 from bokeh.embed import components
 from bokeh.models.sources import ColumnDataSource
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from nba_api.stats.endpoints import commonplayerinfo, playerfantasyprofile
 from nba_api.stats.static import players
 import pandas
@@ -66,44 +66,52 @@ def create_bar_chart(data, title, x_name, y_name, hover_tool=None,
 
 app = Flask(__name__)
 
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-@app.route("/<playerName>/<seasonYear>/<statCategory>")
-def chart(playerName,seasonYear,statCategory):
-    playerId = players.find_players_by_first_name(playerName)[0]['id']
-    # print(playerId)
-
-
-    player_info = commonplayerinfo.CommonPlayerInfo(player_id= playerId)
-    playerInfo = player_info.common_player_info.get_data_frame()
-    # print (avaliableSeasonDF.at[0, 'SEASON_ID'])
-    # print (playerInfo)
-    # team_id =
-
-
-    seasonInfo = playerfantasyprofile.PlayerFantasyProfile(player_id = playerId, season=seasonYear)
-
-    seasonInfoByGame= seasonInfo.opponent.get_data_frame()
-    # print(seasonInfoByGame)
-    statDF = seasonInfoByGame.loc[:,statCategory]
-    oppDF = seasonInfoByGame.loc[:,'GROUP_VALUE']
-    print(statDF)
-    bars_count = 10
-    if bars_count <= 0:
-        bars_count = 1
-
-    data = {"Game": [], "Stat": statDF.tolist(), "Opponent": oppDF.tolist()}
-    for i in range(1, len(statDF.tolist()) + 1):
-        data['Game'].append(i)
+@app.route("/chart", methods= ['POST', 'GET'])
+def chart():
+    if request.method == 'POST':
+        result = request.form
+        playerName = result['Name']
+        seasonYear =  result['Season']
+        statCategory = result['Stat']
+        playerId = players.find_players_by_first_name(playerName)[0]['id']
+        # print(playerId)
 
 
-    hover = create_hover_tool()
-    title = playerName + ' ' + seasonYear
-    print(data)
-    plot = create_bar_chart(data, title, "Game",
-                            statCategory, hover)
-    script, div = components(plot)
+        player_info = commonplayerinfo.CommonPlayerInfo(player_id= playerId)
+        playerInfo = player_info.common_player_info.get_data_frame()
+        # print (avaliableSeasonDF.at[0, 'SEASON_ID'])
+        # print (playerInfo)
+        # team_id =
 
-    return render_template("chart.html", pn = playerName,sy = seasonYear,sc = statCategory,
+
+        seasonInfo = playerfantasyprofile.PlayerFantasyProfile(player_id = playerId, season=seasonYear)
+
+        seasonInfoByGame= seasonInfo.opponent.get_data_frame()
+        # print(seasonInfoByGame)
+        statDF = seasonInfoByGame.loc[:,statCategory]
+        oppDF = seasonInfoByGame.loc[:,'GROUP_VALUE']
+        print(statDF)
+        bars_count = 10
+        if bars_count <= 0:
+            bars_count = 1
+
+        data = {"Game": [], "Stat": statDF.tolist(), "Opponent": oppDF.tolist()}
+        for i in range(1, len(statDF.tolist()) + 1):
+            data['Game'].append(i)
+
+
+        hover = create_hover_tool()
+        title = playerName + ' ' + seasonYear
+        print(data)
+        plot = create_bar_chart(data, title, "Game",
+                                statCategory, hover)
+        script, div = components(plot)
+
+        return render_template("chart.html", pn = playerName,sy = seasonYear,sc = statCategory,
                            the_div=div, the_script=script)
 
 if __name__ == "__main__":
